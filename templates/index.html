@@ -1,0 +1,1855 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mahesh Hostel Staff Core™ - Management & Attendance System</title>
+    <!-- Outfit Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- jsPDF Library for Salary Reports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- html5-qrcode Library for Camera Scanner -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Custom Scrollbar for premium feel */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6366f1;
+        }
+
+        /* Glassmorphism utility */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Printing Specific Styles for ID Card */
+        @media print {
+            body * {
+                visibility: hidden !important;
+                background: white !important;
+                color: black !important;
+            }
+            #printable-id-card-area, #printable-id-card-area * {
+                visibility: visible !important;
+            }
+            #printable-id-card-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 54mm; /* CR80 standard card width */
+                height: 86mm; /* CR80 standard card height */
+                margin: 0;
+                padding: 0;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                box-shadow: none;
+                background: white !important;
+                color: black !important;
+                overflow: hidden;
+            }
+            /* Adjust colors for high contrast black-and-white or color prints */
+            .print-bg-gradient {
+                background: linear-gradient(135deg, #4f46e5 0%, #312e81 100%) !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .print-text-white {
+                color: white !important;
+            }
+        }
+
+        /* Scanning Laser Animation */
+        @keyframes scan {
+            0%, 100% { top: 0%; opacity: 0.8; }
+            50% { top: 100%; opacity: 0.3; }
+        }
+        .laser-line {
+            animation: scan 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="h-full font-sans antialiased overflow-x-hidden">
+    <!-- Active Printable ID Card area for window.print() -->
+    <div id="printable-id-card-area" class="hidden absolute top-[-9999px] left-[-9999px]"></div>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-shell" class="flex min-h-screen items-center justify-center p-4 bg-slate-950 relative overflow-hidden" style="background-image: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15) 0%, transparent 40%), radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.08) 0%, transparent 35%);">
+        <!-- Floating decorative glowing background spheres -->
+        <div class="absolute top-[20%] left-[10%] h-48 w-48 rounded-full bg-indigo-600/10 blur-[60px] pointer-events-none"></div>
+        <div class="absolute bottom-[20%] right-[10%] h-48 w-48 rounded-full bg-emerald-600/10 blur-[60px] pointer-events-none"></div>
+
+        <div class="w-full max-w-md glass-card rounded-3xl p-6 sm:p-8 shadow-2xl relative z-10">
+            <!-- Branding Header -->
+            <div class="flex flex-col items-center text-center space-y-3 mb-6">
+                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 shadow-xl shadow-indigo-500/20">
+                    <svg class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold tracking-tight text-white sm:text-2xl">Mahesh Hostel Staff</h2>
+                    <p class="text-xs text-indigo-300 font-semibold mt-1">Management & Attendance Core</p>
+                </div>
+            </div>
+
+            <!-- Login Form -->
+            <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold uppercase text-slate-400 tracking-wider">Username</label>
+                    <input required type="text" id="login-username" placeholder="e.g. nani@123" class="w-full rounded-xl bg-slate-900 border border-slate-800 py-2.5 px-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent">
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold uppercase text-slate-400 tracking-wider">Password</label>
+                    <input required type="password" id="login-password" placeholder="••••••••" class="w-full rounded-xl bg-slate-900 border border-slate-800 py-2.5 px-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent">
+                </div>
+
+                <div id="login-error-msg" class="hidden text-xs text-rose-400 bg-rose-500/10 p-3 border border-rose-500/20 rounded-xl flex items-center space-x-2">
+                    <span class="shrink-0">✕</span>
+                    <span id="login-error-text">Invalid Username or Password.</span>
+                </div>
+
+                <button type="submit" class="w-full inline-flex items-center justify-center space-x-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 active:scale-[0.99] mt-2">
+                    <span>Sign In</span>
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                </button>
+            </form>
+
+            <!-- Test hints block -->
+            <div class="mt-6 pt-4 border-t border-slate-800 text-[10px] text-slate-400 space-y-2">
+                <p class="font-semibold text-slate-300">Quick Test Credentials:</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-slate-950/40 p-2 rounded-lg border border-slate-800">
+                        <span class="text-indigo-400 font-bold block uppercase tracking-wide">Admin Role</span>
+                        <p class="mt-0.5">User: <code class="text-slate-200">nani@123</code></p>
+                        <p>Pass: <code class="text-slate-200">nanimk@123</code></p>
+                    </div>
+                    <div class="bg-slate-950/40 p-2 rounded-lg border border-slate-800">
+                        <span class="text-emerald-400 font-bold block uppercase tracking-wide">Incharge Role</span>
+                        <p class="mt-0.5">User: <code class="text-slate-200">nanimk@123</code></p>
+                        <p>Pass: <code class="text-slate-200">nani@123</code></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP SHELL -->
+    <div id="app-shell" class="hidden min-h-full flex flex-col">
+        <!-- GLOBAL STICKY HEADER & SIGN OUT -->
+        <header class="sticky top-0 z-40 w-full border-b border-slate-800 bg-slate-950/80 backdrop-blur-md px-4 py-3 sm:px-6">
+            <div class="mx-auto flex max-w-7xl items-center justify-between">
+                <!-- Branding -->
+                <div class="flex items-center space-x-3">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 shadow-lg shadow-indigo-500/20">
+                        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                    </div>
+                    <div>
+                        <span class="text-lg font-bold tracking-tight text-white sm:text-xl">Mahesh Hostel Staff<span class="text-indigo-400"> Core™</span></span>
+                        <p class="text-xs text-slate-400 hidden sm:block">Advanced Staff & Attendance Ecosystem</p>
+                    </div>
+                </div>
+
+                <!-- Authenticated User Info / Sign Out -->
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl">
+                        <span class="h-2 w-2 rounded-full bg-indigo-500" id="user-status-dot"></span>
+                        <span class="text-xs font-semibold text-slate-300" id="user-role-display">Portal</span>
+                    </div>
+                    <button onclick="signOut()" class="flex items-center space-x-1.5 rounded-xl border border-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-rose-400 hover:border-rose-500/20 transition-all duration-300">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        <span class="hidden sm:block">Sign Out</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN LAYOUT WRAPPER -->
+        <div class="flex-1 flex flex-col md:flex-row">
+            
+            <!-- SIDE NAVIGATION BAR -->
+            <aside id="sidebar" class="w-full md:w-64 bg-slate-900 border-b md:border-b-0 md:border-r border-slate-800 p-4 flex flex-row md:flex-col gap-2 overflow-x-auto md:overflow-x-visible shrink-0">
+                <!-- Navigation menu will be rendered here dynamically based on role -->
+            </aside>
+
+            <!-- MAIN WORKSPACE -->
+            <main class="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full overflow-y-auto">
+                
+                <!-- DYNAMIC TOP FEEDBACK TOAST -->
+                <div id="toast" class="hidden fixed bottom-6 right-6 z-50 transform translate-y-10 opacity-0 transition-all duration-500 flex items-center space-x-3 rounded-2xl bg-slate-900 p-4 border border-slate-800 shadow-2xl">
+                    <div id="toast-icon" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400">
+                        <!-- Icon loaded via JS -->
+                    </div>
+                    <div>
+                        <p id="toast-title" class="text-sm font-semibold text-white">Successful</p>
+                        <p id="toast-desc" class="text-xs text-slate-400 mt-0.5">Details logged.</p>
+                    </div>
+                </div>
+
+                <!-- ------------------- ADMIN PANEL PANELS ------------------- -->
+                <div id="admin-workspace" class="space-y-6">
+                    
+                    <!-- PANEL: ADMIN OVERVIEW / STATS -->
+                    <div id="panel-admin-dashboard" class="space-y-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                                <h1 class="text-2xl font-bold tracking-tight text-white sm:text-3xl">Admin Overview Dashboard</h1>
+                                <p class="text-sm text-slate-400 mt-1">Hostel operations tracking and critical analytics.</p>
+                            </div>
+                            <div class="flex items-center space-x-2 text-xs text-slate-400 bg-slate-900/50 px-3 py-1.5 rounded-xl border border-slate-800">
+                                <span class="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span>
+                                <span>Realtime Live Server Sync</span>
+                            </div>
+                        </div>
+
+                        <!-- STATS ROW -->
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div class="glass-card rounded-2xl p-5 shadow-xl transition-all duration-300 hover:scale-[1.02]">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Approved Staff</span>
+                                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400">
+                                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="mt-4 flex items-baseline justify-between">
+                                    <span id="stat-active-staff" class="text-3xl font-bold tracking-tight text-white">-</span>
+                                    <span class="text-xs text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full">Active</span>
+                                </div>
+                            </div>
+
+                            <div class="glass-card rounded-2xl p-5 shadow-xl transition-all duration-300 hover:scale-[1.02]">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pending Approvals</span>
+                                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400">
+                                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="mt-4 flex items-baseline justify-between">
+                                    <span id="stat-pending-approvals" class="text-3xl font-bold tracking-tight text-white">-</span>
+                                    <span class="text-xs text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded-full">Verification</span>
+                                </div>
+                            </div>
+
+                            <div class="glass-card rounded-2xl p-5 shadow-xl transition-all duration-300 hover:scale-[1.02]">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Scans Today</span>
+                                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+                                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="mt-4 flex items-baseline justify-between">
+                                    <span id="stat-scans-today" class="text-3xl font-bold tracking-tight text-white">-</span>
+                                    <span class="text-xs text-slate-400">Attendance</span>
+                                </div>
+                            </div>
+
+                            <div class="glass-card rounded-2xl p-5 shadow-xl transition-all duration-300 hover:scale-[1.02]">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Inventory Assets</span>
+                                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-pink-500/10 text-pink-400">
+                                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="mt-4 flex items-baseline justify-between">
+                                    <span id="stat-total-assets" class="text-3xl font-bold tracking-tight text-white">-</span>
+                                    <span class="text-xs text-pink-400 font-semibold bg-pink-500/10 px-2 py-0.5 rounded-full">Items</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECONDARY ROW: ATTENDANCE LOGS AND QUICK ASSETS PREVIEW -->
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <!-- Today's Attendance Logs list -->
+                            <div class="lg:col-span-2 glass-card rounded-2xl p-5 shadow-xl">
+                                <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                                    <span>Recent Attendance Logs</span>
+                                    <span class="text-xs text-slate-400 font-normal">(Last 5 Scans)</span>
+                                </h3>
+                                <div class="mt-4 space-y-3" id="recent-scans-container">
+                                    <!-- Rendered dynamically -->
+                                    <p class="text-xs text-slate-500 py-4 text-center">Loading scan logs...</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Assets Alert Box -->
+                            <div class="glass-card rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+                                <div>
+                                    <h3 class="text-base font-bold text-white">Facility Status</h3>
+                                    <p class="text-xs text-slate-400 mt-1">Hostel equipment needing attention.</p>
+                                </div>
+                                <div class="mt-4 space-y-3" id="dashboard-maintenance-assets">
+                                    <!-- Rendered dynamically -->
+                                </div>
+                                <div class="mt-4 pt-4 border-t border-slate-800">
+                                    <button onclick="changeAdminTab('Assets')" class="w-full rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold py-2 text-indigo-400 hover:text-white transition">
+                                        View Full Inventory
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PANEL: STAFF MANAGEMENT & APPROVALS -->
+                    <div id="panel-admin-staff" class="space-y-6 hidden">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                                <h1 class="text-2xl font-bold tracking-tight text-white">Staff Management</h1>
+                                <p class="text-sm text-slate-400 mt-1">Monitor active records and approve incoming onboarding queues.</p>
+                            </div>
+                            <!-- Sub Tabs: Active Staff vs Approval Queue -->
+                            <div class="flex border-b border-slate-800 gap-1 bg-slate-900/60 p-1 rounded-xl">
+                                <button id="subtab-active-btn" onclick="switchStaffSubTab('active')" class="rounded-lg px-3 py-1.5 text-xs font-semibold bg-slate-800 text-white shadow">
+                                    Active Staff
+                                </button>
+                                <button id="subtab-queue-btn" onclick="switchStaffSubTab('queue')" class="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-white flex items-center space-x-1.5">
+                                    <span>Approval Queue</span>
+                                    <span id="queue-count-badge" class="hidden px-1.5 py-0.5 rounded-full bg-indigo-500 text-[10px] text-white font-bold leading-none">0</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Active Staff View -->
+                        <div id="staff-active-view" class="space-y-4">
+                            <div class="flex items-center justify-between gap-4">
+                                <div class="relative w-full max-w-sm">
+                                    <input type="text" id="staff-search-input" onkeyup="filterStaffTable()" placeholder="Search staff by name, ID or role..." class="w-full rounded-xl bg-slate-900 border border-slate-800 py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent">
+                                    <div class="absolute left-3 top-3 text-slate-500">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="glass-card rounded-2xl overflow-hidden shadow-2xl">
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left text-sm text-slate-300">
+                                        <thead class="bg-slate-900 text-xs uppercase tracking-wider text-slate-400 font-semibold">
+                                            <tr>
+                                                <th scope="col" class="px-6 py-4">Employee</th>
+                                                <th scope="col" class="px-6 py-4">Role / ID</th>
+                                                <th scope="col" class="px-6 py-4">Contact Details</th>
+                                                <th scope="col" class="px-6 py-4">Verification IDs</th>
+                                                <th scope="col" class="px-6 py-4">Base Salary</th>
+                                                <th scope="col" class="px-6 py-4 text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-800" id="active-staff-table-body">
+                                            <!-- Rendered dynamically -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Approval Queue View -->
+                        <div id="staff-queue-view" class="space-y-4 hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="approval-queue-grid">
+                                <!-- Rendered dynamically as beautifully styled pending cards -->
+                            </div>
+                            <div id="queue-empty-state" class="hidden text-center py-12 glass-card rounded-2xl">
+                                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 border border-slate-800 text-slate-500">
+                                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <h3 class="mt-4 text-sm font-semibold text-white">Approval Queue Empty</h3>
+                                <p class="mt-1 text-xs text-slate-400">All staff registration applications have been processed.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PANEL: SALARY TRACKER -->
+                    <div id="panel-admin-salaries" class="space-y-6 hidden">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                                <h1 class="text-2xl font-bold tracking-tight text-white">Salary Tracker</h1>
+                                <p class="text-sm text-slate-400 mt-1">Audit base staff payouts, compute calculations and generate legal PDF audits.</p>
+                            </div>
+                            <button onclick="generateSalaryPDF()" class="inline-flex items-center space-x-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <span>Generate PDF Salary Report</span>
+                            </button>
+                        </div>
+
+                        <!-- Salaries table -->
+                        <div class="glass-card rounded-2xl overflow-hidden shadow-2xl">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm text-slate-300">
+                                    <thead class="bg-slate-900 text-xs uppercase tracking-wider text-slate-400 font-semibold">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-4">Staff Member</th>
+                                            <th scope="col" class="px-6 py-4">Employee ID</th>
+                                            <th scope="col" class="px-6 py-4">Role</th>
+                                            <th scope="col" class="px-6 py-4">Account/PhonePe</th>
+                                            <th scope="col" class="px-6 py-4">Base Monthly Salary</th>
+                                            <th scope="col" class="px-6 py-4">Allowances (10%)</th>
+                                            <th scope="col" class="px-6 py-4">Deductions (5%)</th>
+                                            <th scope="col" class="px-6 py-4 font-bold text-white">Net Payout</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-800" id="salaries-table-body">
+                                        <!-- Rendered dynamically -->
+                                    </tbody>
+                                    <tfoot>
+                                        <tr class="bg-slate-900/60 font-semibold text-white">
+                                            <td colspan="4" class="px-6 py-4 text-right">Aggregated Monthly Budget:</td>
+                                            <td id="salary-total-base" class="px-6 py-4">-</td>
+                                            <td id="salary-total-allow" class="px-6 py-4 text-emerald-400">-</td>
+                                            <td id="salary-total-deduct" class="px-6 py-4 text-rose-400">-</td>
+                                            <td id="salary-total-net" class="px-6 py-4 text-indigo-300 font-bold">-</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PANEL: ID CARD GENERATOR -->
+                    <div id="panel-admin-idcards" class="space-y-6 hidden">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                                <h1 class="text-2xl font-bold tracking-tight text-white">Vertical ID Card Generator</h1>
+                                <p class="text-sm text-slate-400 mt-1">Render print-ready corporate identity cards with embedded QR Codes.</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <!-- Selector Panel -->
+                            <div class="glass-card rounded-2xl p-5 shadow-xl space-y-4">
+                                <h3 class="text-sm font-bold text-white uppercase tracking-wider">Select Staff Member</h3>
+                                <div class="space-y-2 max-h-[400px] overflow-y-auto pr-1" id="id-card-selection-list">
+                                    <!-- Rendered dynamically -->
+                                </div>
+                            </div>
+
+                            <!-- Live ID Card Preview Panel -->
+                            <div class="lg:col-span-2 glass-card rounded-2xl p-6 shadow-xl flex flex-col items-center justify-center min-h-[500px] space-y-6">
+                                <span class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Digital Realtime Print Preview</span>
+                                
+                                <!-- Printable Vertical ID Card Design Frame -->
+                                <div id="id-card-element" class="relative w-[65mm] h-[103mm] rounded-2xl overflow-hidden bg-slate-900 border border-slate-700 shadow-2xl flex flex-col justify-between p-4 bg-cover bg-center" style="background-image: linear-gradient(180deg, rgba(15,23,42,0.95) 0%, rgba(30,41,59,0.98) 100%);">
+                                    <!-- Dynamic Inner design loaded via JS -->
+                                    <div class="flex items-center justify-center flex-1">
+                                        <p class="text-xs text-slate-500">Select a staff member from the sidebar to generate ID Card preview</p>
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="flex items-center space-x-3" id="id-card-actions-wrapper">
+                                    <button disabled id="print-id-card-btn" onclick="printIDCard()" class="inline-flex items-center space-x-2 rounded-xl bg-indigo-600 px-6 py-3 text-xs font-bold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition disabled:opacity-40 disabled:pointer-events-none">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                        </svg>
+                                        <span>Print ID Card</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Shared Asset Management Panel -->
+                <div id="panel-admin-assets" class="space-y-6 hidden">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <h1 class="text-2xl font-bold tracking-tight text-white">Asset & Inventory Manager</h1>
+                            <p class="text-sm text-slate-400 mt-1">Track quantities, audit maintenance status, and update physical facility records.</p>
+                        </div>
+                        <button onclick="openAssetModal('add')" class="inline-flex items-center space-x-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                            </svg>
+                            <span>Add Asset Item</span>
+                        </button>
+                    </div>
+
+                    <!-- Inventory Table Grid -->
+                    <div class="glass-card rounded-2xl overflow-hidden shadow-2xl">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm text-slate-300">
+                                <thead class="bg-slate-900 text-xs uppercase tracking-wider text-slate-400 font-semibold">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-4">Asset Item Name</th>
+                                        <th scope="col" class="px-6 py-4">Total Quantity</th>
+                                        <th scope="col" class="px-6 py-4">Functional Status</th>
+                                        <th scope="col" class="px-6 py-4 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-800" id="assets-table-body">
+                                    <!-- Rendered dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ------------------- INCHARGE PANEL PANELS ------------------- -->
+                <div id="incharge-workspace" class="space-y-6 hidden">
+                    
+                    <!-- PANEL: INCHARGE QR scanner -->
+                    <div id="panel-incharge-scanner" class="space-y-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                                <h1 class="text-2xl font-bold tracking-tight text-white">ID Card Attendance Scanner</h1>
+                                <p class="text-sm text-slate-400 mt-1">Scan barcode/QR codes on printed physical ID cards to log instant daily attendance.</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <!-- Camera scanner screen -->
+                            <div class="lg:col-span-2 glass-card rounded-2xl p-5 shadow-xl flex flex-col items-center justify-center relative overflow-hidden min-h-[350px]">
+                                <div class="w-full max-w-md bg-slate-950 rounded-xl border border-slate-800 relative overflow-hidden shadow-2xl">
+                                    
+                                    <!-- QR Scan active camera box -->
+                                    <div id="qr-reader" class="w-full min-h-[300px]"></div>
+                                    
+                                    <!-- Scan overlays -->
+                                    <div id="qr-laser-line" class="hidden absolute top-0 left-0 w-full h-1 bg-indigo-500/80 shadow-md shadow-indigo-500 laser-line z-10 pointer-events-none"></div>
+                                </div>
+                                
+                                <div class="mt-4 flex flex-col items-center space-y-2">
+                                    <p class="text-xs text-slate-400 text-center">Place the QR code inside the camera bracket to register attendance automatically.</p>
+                                    <div class="flex items-center space-x-3 mt-1">
+                                        <button onclick="startCameraScanner()" class="rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold px-4 py-2 hover:bg-slate-800 text-indigo-400 transition">
+                                            Start Camera
+                                        </button>
+                                        <button onclick="stopCameraScanner()" class="rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold px-4 py-2 hover:bg-slate-800 text-slate-400 transition">
+                                            Stop Camera
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Testing Scanner Simulator console -->
+                            <div class="glass-card rounded-2xl p-5 shadow-xl flex flex-col justify-between space-y-6">
+                                <div class="space-y-3">
+                                    <div class="rounded-xl bg-indigo-500/10 p-3 border border-indigo-500/20">
+                                        <span class="text-xs font-bold text-indigo-400 uppercase tracking-widest">Simulator Console</span>
+                                        <p class="text-[11px] text-slate-300 mt-1">No physical QR/Camera? Select a staff member below to trigger a virtual barcode scan instant audit.</p>
+                                    </div>
+
+                                    <div class="space-y-2.5">
+                                        <label class="block text-xs font-bold uppercase text-slate-400 tracking-wider">Select Staff Member</label>
+                                        <select id="simulator-staff-select" class="w-full rounded-xl bg-slate-900 border border-slate-800 py-2.5 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent">
+                                            <!-- Loaded dynamically with Approved Staff -->
+                                        </select>
+                                    </div>
+
+                                    <button onclick="simulateQRScan()" class="w-full inline-flex items-center justify-center space-x-2 rounded-xl bg-emerald-600 px-4 py-3 text-xs font-bold text-white hover:bg-emerald-700 transition shadow-lg shadow-emerald-500/20">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1M6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                                        </svg>
+                                        <span>Trigger Simulated QR Scan</span>
+                                    </button>
+                                </div>
+
+                                <!-- Attendance logging status alert box -->
+                                <div id="scan-feedback-box" class="hidden p-4 rounded-xl border flex items-start space-x-3">
+                                    <!-- Filled dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PANEL: INCHARGE ONBOARDING FORM -->
+                    <div id="panel-incharge-onboard" class="space-y-6 hidden">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                                <h1 class="text-2xl font-bold tracking-tight text-white">Staff Onboarding Request</h1>
+                                <p class="text-sm text-slate-400 mt-1">Register new workers profile. Requires Admin approval queue verification to activate.</p>
+                            </div>
+                        </div>
+
+                        <!-- Form Card -->
+                        <div class="max-w-2xl mx-auto glass-card rounded-2xl p-6 sm:p-8 shadow-2xl">
+                            <form id="onboard-form" onsubmit="submitOnboardForm(event)" class="space-y-6">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                    <!-- Full Name -->
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold uppercase text-slate-400 tracking-wider">Worker Full Name</label>
+                                        <input required type="text" name="name" placeholder="e.g. Ramesh Chandra" class="w-full rounded-xl bg-slate-900 border border-slate-800 py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent">
+                                    </div>
+                                    <!-- Role -->
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold uppercase text-slate-400 tracking-wider">Job Role</label>
+                                        <select required name="role" class="w-full rounded-xl bg-slate-900 border border-slate-800 py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent">
+                                            <option value="Chef">Chef / Cook</option>
+                                            <option value="Security">Security Guard</option>
+                                            <option value="Janitor">Janitor / Cleaning Staff</option>
+                                            <option value="Incharge">Assistant Incharge</option>
+                                            <option value="Warden">Hostel Warden</option>
+                                            <option value="Maintenance">Maintenance Technician</option>
+                                        </select>
+                                    </div>
+                                    <!-- Phone Number -->
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold uppercase text-slate-400 tracking-wider">Phone Number</label>
+                                        <input required type="tel" name="phoneNumber" placeholder="e.g. +91 98765 43210" class="w-full rounded-xl bg-slate-900 border border-slate-800 py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent">
+                                    </div>
+                                    <!-- Aadhar Number -->
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold uppercase text-slate-400 tracking-wider">12-Digit Aadhar Number</label>
+                                        <input required type="text" pattern="\d{12}|\d{4}\s\d{4}\s\d{4}" title="Please enter a valid 12-digit Aadhar number (e.g. 123456789012 or 1234 5678 9012)" name="aadharNumber" placeholder="e.g. 5678 9012 3456" class="w-full rounded-xl bg-slate-900 border border-slate-800 py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent">
+                                    </div>
+                                    <!-- Payment Info -->
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold uppercase text-slate-400 tracking-wider">Account / PhonePe UPI Address</label>
+                                        <input required type="text" name="paymentNumber" placeholder="e.g. name@upi or 1234567890@paytm" class="w-full rounded-xl bg-slate-900 border border-slate-800 py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent">
+                                    </div>
+                                    <!-- Base Salary -->
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold uppercase text-slate-400 tracking-wider">Base Monthly Salary (₹)</label>
+                                        <input required type="number" min="5000" max="100000" name="baseSalary" placeholder="e.g. 18000" class="w-full rounded-xl bg-slate-900 border border-slate-800 py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent">
+                                    </div>
+                                </div>
+
+                                <!-- Photo selector with high-quality avatars for gorgeous visual onboarding -->
+                                <div class="space-y-2 pt-2">
+                                    <label class="block text-xs font-bold uppercase text-slate-400 tracking-wider">Select Profile Photo Avatar</label>
+                                    <div class="grid grid-cols-4 sm:grid-cols-6 gap-3" id="form-avatar-picker">
+                                        <!-- Loaded by JS, includes dynamic selects -->
+                                    </div>
+                                    <input type="hidden" name="photoUrl" id="form-photo-url-input">
+                                </div>
+
+                                <button type="submit" class="w-full inline-flex items-center justify-center space-x-2 rounded-xl bg-indigo-600 px-4 py-3.5 text-sm font-bold text-white hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 active:scale-[0.99]">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                                    </svg>
+                                    <span>Submit Onboarding Request to Admin</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                </div>
+
+            </main>
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="bg-slate-950 border-t border-slate-900 py-4 text-center text-xs text-slate-500">
+            <p>© 2026 Mahesh Hostel Staff Core™ • Responsive Administration & QR Logistics Console.</p>
+        </footer>
+    </div>
+
+    <!-- DYNAMIC ASSETS MANAGEMENT DIALOG MODAL -->
+    <div id="asset-modal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <!-- Background Overlay -->
+            <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity" aria-hidden="true" onclick="closeAssetModal()"></div>
+
+            <!-- Modal Content positioning helper -->
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <!-- Actual Modal box -->
+            <div class="inline-block align-bottom bg-slate-900 border border-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full p-6">
+                <div>
+                    <h3 class="text-lg font-bold text-white" id="asset-modal-title">Add Hostel Asset</h3>
+                    <p class="text-xs text-slate-400 mt-1">Configure inventory name, count, and active condition status.</p>
+                </div>
+                
+                <form id="asset-form" onsubmit="submitAssetForm(event)" class="mt-4 space-y-4">
+                    <input type="hidden" id="asset-form-id">
+                    
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Asset Item Name</label>
+                        <input required type="text" id="asset-form-name" placeholder="e.g. Double Wooden Bunks" class="w-full rounded-xl bg-slate-950 border border-slate-800 py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Quantity</label>
+                            <input required type="number" min="1" id="asset-form-quantity" placeholder="e.g. 50" class="w-full rounded-xl bg-slate-950 border border-slate-800 py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Operational Condition</label>
+                            <select id="asset-form-status" class="w-full rounded-xl bg-slate-950 border border-slate-800 py-2.5 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent">
+                                <option value="Excellent">Excellent</option>
+                                <option value="Good">Good</option>
+                                <option value="Maintenance Required">Maintenance Required</option>
+                                <option value="Depleted">Depleted</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex items-center justify-end space-x-3 pt-4 border-t border-slate-800">
+                        <button type="button" onclick="closeAssetModal()" class="rounded-xl border border-slate-800 px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white transition">
+                            Cancel
+                        </button>
+                        <button type="submit" class="rounded-xl bg-indigo-600 px-5 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ------------------- JAVASCRIPT APP LOGIC ------------------- -->
+    <script>
+        // App State
+        let currentRole = 'Admin'; 
+        let currentAdminTab = 'Dashboard';
+        let currentInchargeTab = 'Scanner';
+        let currentStaffSubTab = 'active';
+        
+        let staffList = [];
+        let attendanceLogs = [];
+        let assetsList = [];
+        let selectedStaffForIDCard = null;
+        let qrScannerInstance = null;
+
+        // High quality stable avatars for preset onboarding
+        const AVATARS = [
+            "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+            "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
+            "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=150&q=80",
+            "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80",
+            "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+            "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80",
+        ];
+
+        // On App Load
+        window.addEventListener('DOMContentLoaded', () => {
+            checkSessionAuth();
+        });
+
+        function checkSessionAuth() {
+            const token = sessionStorage.getItem('auth_token');
+            const role = sessionStorage.getItem('user_role');
+
+            if (token && role) {
+                currentRole = role;
+                document.getElementById('login-shell').classList.add('hidden');
+                document.getElementById('app-shell').classList.remove('hidden');
+                
+                // Update User Info Header Badge
+                const display = document.getElementById('user-role-display');
+                display.innerText = `${role} Portal`;
+                
+                const dot = document.getElementById('user-status-dot');
+                if (role === 'Admin') {
+                    dot.className = 'h-2 w-2 rounded-full bg-indigo-500 animate-pulse';
+                    document.getElementById('admin-workspace').classList.remove('hidden');
+                    document.getElementById('incharge-workspace').classList.add('hidden');
+                } else {
+                    dot.className = 'h-2 w-2 rounded-full bg-emerald-500 animate-pulse';
+                    document.getElementById('incharge-workspace').classList.remove('hidden');
+                    document.getElementById('admin-workspace').classList.add('hidden');
+                }
+
+                initApp();
+            } else {
+                document.getElementById('login-shell').classList.remove('hidden');
+                document.getElementById('app-shell').classList.add('hidden');
+                stopCameraScanner();
+            }
+        }
+
+        function handleLoginSubmit(event) {
+            event.preventDefault();
+            const usernameInput = document.getElementById('login-username').value;
+            const passwordInput = document.getElementById('login-password').value;
+            const errorMsg = document.getElementById('login-error-msg');
+            const errorText = document.getElementById('login-error-text');
+
+            errorMsg.classList.add('hidden');
+
+            fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: usernameInput, password: passwordInput })
+            })
+            .then(res => {
+                if (!res.ok) {
+                    return res.json().then(err => { throw new Error(err.error || 'Invalid credentials'); });
+                }
+                return res.json();
+            })
+            .then(data => {
+                // Save session storage
+                sessionStorage.setItem('auth_token', data.token);
+                sessionStorage.setItem('user_role', data.role);
+                sessionStorage.setItem('auth_username', data.username);
+                
+                // Reset form
+                document.getElementById('login-username').value = '';
+                document.getElementById('login-password').value = '';
+                
+                // Show core app shell
+                checkSessionAuth();
+                showToast('Welcome back!', `Signed in successfully as ${data.role}.`, 'emerald');
+            })
+            .catch(err => {
+                errorText.innerText = err.message;
+                errorMsg.classList.remove('hidden');
+                
+                // Bounce animation effect on login box
+                const loginContainer = document.querySelector('#login-shell > div');
+                loginContainer.classList.add('animate-bounce');
+                setTimeout(() => loginContainer.classList.remove('animate-bounce'), 500);
+            });
+        }
+
+        function signOut() {
+            sessionStorage.removeItem('auth_token');
+            sessionStorage.removeItem('user_role');
+            sessionStorage.removeItem('auth_username');
+            showToast('Signing Out', 'Your administration session has been cleared.', 'amber');
+            setTimeout(() => {
+                window.location.reload();
+            }, 600);
+        }
+
+        function initApp() {
+            renderSidebar();
+            loadAllData();
+            renderAvatarPicker();
+        }
+
+        // Sidebar Navigation rendering based on Active Role
+        function renderSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.innerHTML = '';
+
+            const navigationConfig = {
+                Admin: [
+                    { name: 'Dashboard', icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z' },
+                    { name: 'Staff Records', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
+                    { name: 'Salary Tracker', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+                    { name: 'ID Card Generator', icon: 'M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
+                    { name: 'Assets', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
+                ],
+                Incharge: [
+                    { name: 'QR Attendance Scanner', icon: 'M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z' },
+                    { name: 'Quick Onboarding Form', icon: 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z' },
+                    { name: 'Assets', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
+                ]
+            };
+
+            const items = navigationConfig[currentRole];
+            items.forEach((item, index) => {
+                const isActive = (currentRole === 'Admin' && currentAdminTab === item.name) || 
+                                 (currentRole === 'Incharge' && currentInchargeTab === item.name);
+                
+                const btn = document.createElement('button');
+                btn.className = `flex items-center space-x-3 rounded-xl px-4 py-3 text-xs font-semibold transition-all shrink-0 md:shrink md:w-full ${isActive ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/20' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`;
+                btn.onclick = () => {
+                    if (currentRole === 'Admin') {
+                        changeAdminTab(item.name);
+                    } else {
+                        changeInchargeTab(item.name);
+                    }
+                };
+
+                btn.innerHTML = `
+                    <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="${item.icon}" />
+                    </svg>
+                    <span>${item.name}</span>
+                `;
+                sidebar.appendChild(btn);
+            });
+        }
+
+        // Change Admin Views
+        function changeAdminTab(tabName) {
+            currentAdminTab = tabName;
+            renderSidebar();
+
+            const panels = {
+                'Dashboard': 'panel-admin-dashboard',
+                'Staff Records': 'panel-admin-staff',
+                'Salary Tracker': 'panel-admin-salaries',
+                'ID Card Generator': 'panel-admin-idcards'
+            };
+
+            // If we are selecting Assets shared panel
+            if (tabName === 'Assets') {
+                document.getElementById('admin-workspace').classList.add('hidden');
+                document.getElementById('panel-admin-assets').classList.remove('hidden');
+            } else {
+                document.getElementById('panel-admin-assets').classList.add('hidden');
+                document.getElementById('admin-workspace').classList.remove('hidden');
+
+                Object.keys(panels).forEach(key => {
+                    const element = document.getElementById(panels[key]);
+                    if (key === tabName) {
+                        element.classList.remove('hidden');
+                    } else {
+                        element.classList.add('hidden');
+                    }
+                });
+            }
+
+            if (tabName === 'ID Card Generator' && staffList.length > 0) {
+                // Preselect first approved staff member for ID Card Generator if none selected
+                const approvedStaff = staffList.filter(s => s.status === 'Approved');
+                if (approvedStaff.length > 0 && !selectedStaffForIDCard) {
+                    selectStaffForCard(approvedStaff[0].employeeId);
+                }
+            }
+        }
+
+        // Change Incharge Views
+        function changeInchargeTab(tabName) {
+            currentInchargeTab = tabName;
+            renderSidebar();
+
+            if (tabName === 'Assets') {
+                document.getElementById('incharge-workspace').classList.add('hidden');
+                document.getElementById('panel-admin-assets').classList.remove('hidden');
+                stopCameraScanner();
+            } else {
+                document.getElementById('panel-admin-assets').classList.add('hidden');
+                document.getElementById('incharge-workspace').classList.remove('hidden');
+
+                if (tabName === 'QR Attendance Scanner') {
+                    document.getElementById('panel-incharge-scanner').classList.remove('hidden');
+                    document.getElementById('panel-incharge-onboard').classList.add('hidden');
+                } else {
+                    document.getElementById('panel-incharge-onboard').classList.remove('hidden');
+                    document.getElementById('panel-incharge-scanner').classList.add('hidden');
+                    stopCameraScanner();
+                }
+            }
+        }
+
+        // Staff Tab Switcher (Active vs Approval Queue)
+        function switchStaffSubTab(tab) {
+            currentStaffSubTab = tab;
+            const activeBtn = document.getElementById('subtab-active-btn');
+            const queueBtn = document.getElementById('subtab-queue-btn');
+            
+            const activeView = document.getElementById('staff-active-view');
+            const queueView = document.getElementById('staff-queue-view');
+
+            if (tab === 'active') {
+                activeBtn.className = "rounded-lg px-3 py-1.5 text-xs font-semibold bg-slate-800 text-white shadow";
+                queueBtn.className = "rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-white flex items-center space-x-1.5";
+                activeView.classList.remove('hidden');
+                queueView.classList.add('hidden');
+            } else {
+                queueBtn.className = "rounded-lg px-3 py-1.5 text-xs font-semibold bg-slate-800 text-white shadow flex items-center space-x-1.5";
+                activeBtn.className = "rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-white";
+                queueView.classList.remove('hidden');
+                activeView.classList.add('hidden');
+            }
+        }
+
+        // ----------------- DATA LOADER & FETCH APIs -----------------
+
+        function loadAllData() {
+            fetch('/api/staff')
+                .then(res => res.json())
+                .then(data => {
+                    staffList = data;
+                    renderStaffViews();
+                    updateOverviewStats();
+                    renderSimulatorDropdown();
+                });
+
+            fetch('/api/attendance')
+                .then(res => res.json())
+                .then(data => {
+                    attendanceLogs = data;
+                    renderRecentAttendanceLogs();
+                    updateOverviewStats();
+                });
+
+            fetch('/api/assets')
+                .then(res => res.json())
+                .then(data => {
+                    assetsList = data;
+                    renderAssetsTable();
+                    renderMaintenanceAlerts();
+                    updateOverviewStats();
+                });
+        }
+
+        // Update Overview Stats Count
+        function updateOverviewStats() {
+            const approvedStaff = staffList.filter(s => s.status === 'Approved');
+            const pendingStaff = staffList.filter(s => s.status === 'Pending');
+            
+            document.getElementById('stat-active-staff').innerText = approvedStaff.length;
+            document.getElementById('stat-pending-approvals').innerText = pendingStaff.length;
+            
+            // Queue badge count
+            const queueBadge = document.getElementById('queue-count-badge');
+            if (pendingStaff.length > 0) {
+                queueBadge.innerText = pendingStaff.length;
+                queueBadge.classList.remove('hidden');
+            } else {
+                queueBadge.classList.add('hidden');
+            }
+
+            // Scans today
+            const todayStr = new Date().toISOString().split('T')[0];
+            const scansToday = attendanceLogs.filter(log => log.date === todayStr);
+            document.getElementById('stat-scans-today').innerText = scansToday.length;
+
+            // Assets count
+            const totalAssetsQty = assetsList.reduce((acc, curr) => acc + curr.quantity, 0);
+            document.getElementById('stat-total-assets').innerText = totalAssetsQty;
+        }
+
+        // ----------------- ADMIN DASHBOARD RENDERERS -----------------
+
+        function renderRecentAttendanceLogs() {
+            const container = document.getElementById('recent-scans-container');
+            container.innerHTML = '';
+            
+            const recent = attendanceLogs.slice(0, 5);
+            if (recent.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-500 py-4 text-center">No attendance logs logged yet for today.</p>`;
+                return;
+            }
+
+            recent.forEach(log => {
+                const time = log.scanTimestamp ? log.scanTimestamp.split(' ')[1] : '-';
+                
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800/60 text-xs";
+                item.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <img src="${log.photoUrl || AVATARS[0]}" class="h-8 w-8 rounded-full border border-slate-800 object-cover">
+                        <div>
+                            <p class="font-semibold text-white">${log.name || 'Unknown Staff'}</p>
+                            <p class="text-[10px] text-slate-400">${log.employeeId} • ${log.role || 'Role'}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-semibold text-[10px]">Verified Scan</span>
+                        <p class="text-[10px] text-slate-400 mt-1">Logged by ${log.scannedBy} at ${time}</p>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function renderMaintenanceAlerts() {
+            const container = document.getElementById('dashboard-maintenance-assets');
+            container.innerHTML = '';
+
+            const repairNeeded = assetsList.filter(a => a.status === 'Maintenance Required' || a.status === 'Depleted');
+            if (repairNeeded.length === 0) {
+                container.innerHTML = `
+                    <div class="rounded-xl bg-emerald-500/5 p-3.5 border border-emerald-500/10 flex items-center space-x-3">
+                        <div class="h-6 w-6 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">✓</div>
+                        <p class="text-[11px] text-slate-300">All hostel facilities and inventory items are currently in Good operational condition.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            repairNeeded.slice(0, 3).forEach(asset => {
+                const isDepleted = asset.status === 'Depleted';
+                
+                const box = document.createElement('div');
+                box.className = `p-3 rounded-xl border flex items-center justify-between text-xs ${isDepleted ? 'bg-rose-500/5 border-rose-500/10 text-rose-400' : 'bg-amber-500/5 border-amber-500/10 text-amber-400'}`;
+                box.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <span class="h-2 w-2 rounded-full ${isDepleted ? 'bg-rose-500' : 'bg-amber-500'}"></span>
+                        <span class="font-semibold text-slate-100">${asset.itemName} (${asset.quantity} Qty)</span>
+                    </div>
+                    <span class="text-[10px] font-bold uppercase tracking-wider">${asset.status}</span>
+                `;
+                container.appendChild(box);
+            });
+        }
+
+        // ----------------- STAFF RECORD RENDERERS -----------------
+
+        function renderStaffViews() {
+            // Render Active Staff Table
+            const tableBody = document.getElementById('active-staff-table-body');
+            tableBody.innerHTML = '';
+
+            const approvedStaff = staffList.filter(s => s.status === 'Approved');
+            
+            approvedStaff.forEach(staff => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-900/40 transition duration-150";
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center space-x-3">
+                            <img src="${staff.photoUrl || AVATARS[0]}" class="h-10 w-10 rounded-full border border-slate-700 object-cover bg-slate-900">
+                            <div>
+                                <p class="text-sm font-semibold text-white">${staff.name}</p>
+                                <p class="text-[10px] text-slate-400">Created ${staff.createdAt ? staff.createdAt.split(' ')[0] : '-'}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold tracking-wider bg-slate-800 text-slate-300 border border-slate-700">${staff.role}</span>
+                        <p class="text-xs text-indigo-400 font-bold mt-1">${staff.employeeId}</p>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-xs text-slate-300">
+                        <p>📞 ${staff.phoneNumber}</p>
+                        <p class="text-slate-400 mt-0.5">💳 UPI: ${staff.paymentNumber}</p>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-xs text-slate-400 font-mono">
+                        <p>AADHAR: ${staff.aadharNumber}</p>
+                        <p class="text-[10px] mt-0.5">TOKEN: ${staff.qrCodeToken}</p>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-indigo-200">
+                        ₹${Number(staff.baseSalary).toLocaleString('en-IN')}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-xs">
+                        <button onclick="deleteStaff('${staff.employeeId}', '${staff.name}')" class="text-rose-400 hover:text-rose-300 font-bold">Delete</button>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            // Render Approval Queue
+            const queueGrid = document.getElementById('approval-queue-grid');
+            const emptyState = document.getElementById('queue-empty-state');
+            queueGrid.innerHTML = '';
+
+            const pendingStaff = staffList.filter(s => s.status === 'Pending');
+
+            if (pendingStaff.length === 0) {
+                emptyState.classList.remove('hidden');
+                queueGrid.classList.add('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                queueGrid.classList.remove('hidden');
+
+                pendingStaff.forEach(staff => {
+                    const card = document.createElement('div');
+                    card.className = "glass-card rounded-2xl p-5 shadow-lg flex flex-col justify-between border-t-2 border-t-amber-500 space-y-4";
+                    card.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <img src="${staff.photoUrl || AVATARS[0]}" class="h-12 w-12 rounded-full border border-amber-500/40 object-cover bg-slate-950">
+                            <div>
+                                <h4 class="text-sm font-bold text-white">${staff.name}</h4>
+                                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400">${staff.role}</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 text-[11px] bg-slate-950/40 p-3 rounded-xl border border-slate-800">
+                            <div>
+                                <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Phone Number</span>
+                                <span class="text-slate-300 font-semibold">${staff.phoneNumber}</span>
+                            </div>
+                            <div>
+                                <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Salary Offer</span>
+                                <span class="text-slate-300 font-semibold">₹${Number(staff.baseSalary).toLocaleString('en-IN')}</span>
+                            </div>
+                            <div class="col-span-2">
+                                <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Aadhar Number</span>
+                                <span class="text-slate-300 font-semibold font-mono">${staff.aadharNumber}</span>
+                            </div>
+                            <div class="col-span-2">
+                                <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Payment Info</span>
+                                <span class="text-slate-300 font-semibold">${staff.paymentNumber}</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-2 pt-2">
+                            <button onclick="updateStaffStatus('${staff.employeeId}', 'Approved')" class="flex-1 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition">
+                                Approve
+                            </button>
+                            <button onclick="updateStaffStatus('${staff.employeeId}', 'Rejected')" class="flex-1 rounded-xl bg-rose-600/10 border border-rose-500/20 px-3 py-2 text-xs font-bold text-rose-400 hover:bg-rose-500/10 transition">
+                                Reject
+                            </button>
+                        </div>
+                    `;
+                    queueGrid.appendChild(card);
+                });
+            }
+
+            // Render ID Card Generator List
+            const idList = document.getElementById('id-card-selection-list');
+            idList.innerHTML = '';
+
+            approvedStaff.forEach(staff => {
+                const isSelected = selectedStaffForIDCard && selectedStaffForIDCard.employeeId === staff.employeeId;
+                const div = document.createElement('div');
+                div.className = `flex items-center space-x-3 p-3 rounded-xl cursor-pointer border transition ${isSelected ? 'bg-indigo-600/10 border-indigo-500/40 text-white' : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800/60'}`;
+                div.onclick = () => selectStaffForCard(staff.employeeId);
+                div.innerHTML = `
+                    <img src="${staff.photoUrl || AVATARS[0]}" class="h-9 w-9 rounded-full border border-slate-700 object-cover bg-slate-950 shrink-0">
+                    <div class="truncate">
+                        <p class="text-xs font-bold truncate">${staff.name}</p>
+                        <p class="text-[10px] text-indigo-400 truncate">${staff.employeeId} • ${staff.role}</p>
+                    </div>
+                `;
+                idList.appendChild(div);
+            });
+
+            // Render Salaries Tracker
+            const salaryBody = document.getElementById('salaries-table-body');
+            salaryBody.innerHTML = '';
+            
+            let totalBase = 0;
+            let totalAllow = 0;
+            let totalDeduct = 0;
+            let totalNet = 0;
+
+            approvedStaff.forEach(staff => {
+                const base = Number(staff.baseSalary);
+                const allow = base * 0.10; // 10% Allowance
+                const deduct = base * 0.05; // 5% Deduction
+                const net = base + allow - deduct;
+
+                totalBase += base;
+                totalAllow += allow;
+                totalDeduct += deduct;
+                totalNet += net;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-900/40 transition duration-150 text-xs";
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center space-x-3">
+                            <img src="${staff.photoUrl || AVATARS[0]}" class="h-8 w-8 rounded-full border border-slate-700 object-cover">
+                            <p class="font-semibold text-white">${staff.name}</p>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap font-semibold text-indigo-400">${staff.employeeId}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-slate-400">${staff.role}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-slate-300 font-mono">${staff.paymentNumber}</td>
+                    <td class="px-6 py-4 whitespace-nowrap font-semibold">₹${base.toLocaleString('en-IN')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-emerald-400 font-medium">+₹${allow.toLocaleString('en-IN')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-rose-400 font-medium">-₹${deduct.toLocaleString('en-IN')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap font-bold text-white">₹${net.toLocaleString('en-IN')}</td>
+                `;
+                salaryBody.appendChild(tr);
+            });
+
+            document.getElementById('salary-total-base').innerText = `₹${totalBase.toLocaleString('en-IN')}`;
+            document.getElementById('salary-total-allow').innerText = `+₹${totalAllow.toLocaleString('en-IN')}`;
+            document.getElementById('salary-total-deduct').innerText = `-₹${totalDeduct.toLocaleString('en-IN')}`;
+            document.getElementById('salary-total-net').innerText = `₹${totalNet.toLocaleString('en-IN')}`;
+        }
+
+        // Active Staff filter
+        function filterStaffTable() {
+            const input = document.getElementById('staff-search-input');
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById('active-staff-table-body');
+            const tr = table.getElementsByTagName('tr');
+
+            for (let i = 0; i < tr.length; i++) {
+                const nameCol = tr[i].getElementsByTagName('td')[0];
+                const roleCol = tr[i].getElementsByTagName('td')[1];
+                if (nameCol || roleCol) {
+                    const txtValue = nameCol.textContent || nameCol.innerText;
+                    const roleValue = roleCol.textContent || roleCol.innerText;
+                    if (txtValue.toUpperCase().indexOf(filter) > -1 || roleValue.toUpperCase().indexOf(filter) > -1) {
+                        tr[i].style.display = "";
+                    } else {
+                        tr[i].style.display = "none";
+                    }
+                }
+            }
+        }
+
+        // Approve / Reject Staff onboarding requests
+        function updateStaffStatus(empId, status) {
+            fetch(`/api/staff/${empId}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: status })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    showToast('Action Failed', data.error, 'rose');
+                } else {
+                    showToast(status === 'Approved' ? 'Staff Activated' : 'Request Removed', data.message, status === 'Approved' ? 'emerald' : 'amber');
+                    loadAllData();
+                }
+            });
+        }
+
+        // Delete active approved staff member
+        function deleteStaff(empId, name) {
+            if (confirm(`Are you absolutely sure you want to delete staff member "${name}" (${empId})? This will permanently erase their profile and attendance history.`)) {
+                fetch(`/api/staff/${empId}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'Rejected' }) // Rejected status deletes them from db
+                })
+                .then(res => res.json())
+                .then(data => {
+                    showToast('Profile Deleted', data.message, 'rose');
+                    loadAllData();
+                });
+            }
+        }
+
+        // ----------------- PRINTABLE VERTICAL ID CARD GENERATION -----------------
+
+        function selectStaffForCard(empId) {
+            const staff = staffList.find(s => s.employeeId === empId);
+            if (!staff) return;
+            selectedStaffForIDCard = staff;
+
+            // Re-render sidebar styling
+            renderStaffViews();
+
+            // Load visual printable ID Card Preview Layout
+            const cardFrame = document.getElementById('id-card-element');
+            const printBtn = document.getElementById('print-id-card-btn');
+            
+            printBtn.removeAttribute('disabled');
+            
+            // Modern premium printed design with barcode API
+            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${staff.employeeId}&color=0f172a&bgcolor=ffffff`;
+            
+            cardFrame.innerHTML = `
+                <!-- ID Card Header -->
+                <div class="text-center pb-2 border-b border-slate-700/60 print-bg-gradient shrink-0">
+                    <span class="text-[10px] font-black uppercase tracking-widest text-indigo-400 print-text-white">Mahesh Hostel Staff</span>
+                    <p class="text-[7px] text-slate-400 font-semibold tracking-wider print-text-white uppercase">Secured Identity System</p>
+                </div>
+
+                <!-- ID Card Avatar -->
+                <div class="flex flex-col items-center justify-center py-2 shrink-0">
+                    <div class="h-20 w-20 rounded-full border-2 border-indigo-500 overflow-hidden shadow-lg bg-slate-950">
+                        <img src="${staff.photoUrl || AVATARS[0]}" class="h-full w-full object-cover">
+                    </div>
+                </div>
+
+                <!-- ID Card Information Details -->
+                <div class="text-center py-1 flex-1 flex flex-col justify-center">
+                    <h3 class="text-xs font-bold text-white truncate leading-tight">${staff.name}</h3>
+                    <p class="text-[9px] text-indigo-400 font-extrabold tracking-wider uppercase mt-0.5">${staff.role}</p>
+                    <p class="text-[8px] text-slate-500 font-bold font-mono tracking-wider mt-1">ID: ${staff.employeeId}</p>
+                    <p class="text-[7px] text-slate-400 mt-0.5">Contact: ${staff.phoneNumber}</p>
+                </div>
+
+                <!-- ID Card Bottom scan marker QR code -->
+                <div class="flex flex-col items-center justify-center pt-2 border-t border-slate-700/60 shrink-0">
+                    <div class="bg-white p-1 rounded-md shadow-md border border-slate-200">
+                        <img src="${qrApiUrl}" class="h-16 w-16" alt="QR ID Marker">
+                    </div>
+                    <span class="text-[7px] font-black tracking-widest text-slate-500 uppercase mt-1">Scan for Attendance</span>
+                </div>
+            `;
+
+            // Prepare the Hidden Print Area
+            const printableArea = document.getElementById('printable-id-card-area');
+            printableArea.innerHTML = `
+                <div class="w-[54mm] h-[86mm] flex flex-col justify-between p-3" style="font-family: 'Outfit', sans-serif; box-sizing: border-box; background: white; color: #0f172a; text-align: center;">
+                    <!-- Header -->
+                    <div style="border-bottom: 2px solid #4f46e5; padding-bottom: 6px; margin-bottom: 8px;">
+                        <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #4f46e5; letter-spacing: 1px;">Mahesh Hostel Staff</span>
+                        <p style="font-size: 7px; margin: 2px 0 0 0; text-transform: uppercase; color: #4b5563; font-weight: 600;">Secured Identity Card</p>
+                    </div>
+
+                    <!-- Photo -->
+                    <div style="display: flex; justify-content: center; align-items: center; margin: 4px 0;">
+                        <img src="${staff.photoUrl || AVATARS[0]}" style="width: 72px; height: 72px; border-radius: 50%; border: 2px solid #4f46e5; object-fit: cover;">
+                    </div>
+
+                    <!-- Details -->
+                    <div style="margin: 8px 0; flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                        <h4 style="font-size: 13px; font-weight: 700; color: #0f172a; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${staff.name}</h4>
+                        <p style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #6366f1; margin: 3px 0 0 0; letter-spacing: 0.5px;">${staff.role}</p>
+                        <p style="font-size: 8px; font-weight: 700; font-family: monospace; color: #4b5563; margin: 5px 0 0 0; letter-spacing: 0.5px;">EMPLOYEE ID: ${staff.employeeId}</p>
+                        <p style="font-size: 7px; color: #6b7280; margin: 2px 0 0 0;">Phone: ${staff.phoneNumber}</p>
+                    </div>
+
+                    <!-- QR Code Barcode -->
+                    <div style="border-top: 1px solid #e5e7eb; padding-top: 6px; display: flex; flex-direction: column; align-items: center;">
+                        <img src="${qrApiUrl}" style="width: 60px; height: 60px;">
+                        <span style="font-size: 6px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px;">Scan QR for Daily Attendance</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function printIDCard() {
+            if (!selectedStaffForIDCard) return;
+            window.print();
+        }
+
+        // ----------------- SALARY PDF GENERATION (jsPDF) -----------------
+
+        function generateSalaryPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            const approvedStaff = staffList.filter(s => s.status === 'Approved');
+            const todayStr = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+
+            // Setup Header and Branding colors (Indigo dark accent)
+            doc.setFillColor(79, 70, 229);
+            doc.rect(0, 0, 210, 40, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(22);
+            doc.text("Mahesh Hostel Staff Core™", 15, 20);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.text("OFFICIAL SYSTEM SALARY BUDGET & PAYOUT REPORT", 15, 28);
+            doc.text(`AUDIT DATE: ${todayStr.toUpperCase()}`, 140, 25);
+
+            // Audit Summary stats
+            doc.setTextColor(15, 23, 42);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.text("Financial Summary", 15, 55);
+            
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(75, 85, 99);
+            doc.text(`Total Active Audited Workers: ${approvedStaff.length}`, 15, 63);
+
+            let startY = 75;
+
+            // Draw Table Header
+            doc.setFillColor(15, 23, 42);
+            doc.rect(15, startY, 180, 8, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(9);
+            doc.text("EMPLOYEE", 18, startY + 5.5);
+            doc.text("ROLE", 58, startY + 5.5);
+            doc.text("ACCOUNT/UPI", 88, startY + 5.5);
+            doc.text("BASE (INR)", 123, startY + 5.5);
+            doc.text("ALLOWANCE", 148, startY + 5.5);
+            doc.text("DEDUCTIONS", 173, startY + 5.5);
+            
+            startY += 8;
+
+            let grandTotal = 0;
+
+            // Populate rows
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(31, 41, 55);
+            
+            approvedStaff.forEach((staff, idx) => {
+                const base = Number(staff.baseSalary);
+                const allow = base * 0.10;
+                const deduct = base * 0.05;
+                const net = base + allow - deduct;
+                grandTotal += net;
+
+                // Alternate background shading for luxury paper styling
+                if (idx % 2 === 1) {
+                    doc.setFillColor(243, 244, 246);
+                    doc.rect(15, startY, 180, 8, 'F');
+                }
+
+                doc.text(staff.name, 18, startY + 5.5);
+                doc.text(staff.role, 58, startY + 5.5);
+                doc.text(staff.paymentNumber, 88, startY + 5.5);
+                doc.text(base.toLocaleString('en-IN'), 123, startY + 5.5);
+                doc.text(`+${allow.toLocaleString('en-IN')}`, 148, startY + 5.5);
+                doc.text(`-${deduct.toLocaleString('en-IN')}`, 173, startY + 5.5);
+
+                startY += 8;
+            });
+
+            // Summary divider
+            doc.setDrawColor(79, 70, 229);
+            doc.setLineWidth(0.5);
+            doc.line(15, startY + 2, 195, startY + 2);
+
+            // Total Block
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(11);
+            doc.setTextColor(79, 70, 229);
+            doc.text("AGGREGATED NET SALARY PAYOUT:", 80, startY + 10);
+            doc.text(`INR ${grandTotal.toLocaleString('en-IN')}/-`, 155, startY + 10);
+
+            // Footer Stamp
+            doc.setDrawColor(229, 231, 235);
+            doc.line(15, 270, 195, 270);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(7);
+            doc.setTextColor(156, 163, 175);
+            doc.text("System generated encrypted budget sheet. No manual signature required. Confidential document.", 15, 275);
+            doc.text("MAHESH HOSTEL STAFF SYSTEM INC.", 145, 275);
+
+            // Save PDF
+            doc.save(`Hostel_Salary_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+            showToast('PDF Exported', 'Salary audit PDF report downloaded.', 'emerald');
+        }
+
+        // ----------------- ASSET MANAGEMENT CRUDS -----------------
+
+        function renderAssetsTable() {
+            const body = document.getElementById('assets-table-body');
+            body.innerHTML = '';
+
+            assetsList.forEach(asset => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-900/40 transition duration-150 text-xs";
+                
+                let statusBadge = '';
+                if (asset.status === 'Excellent') {
+                    statusBadge = '<span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold text-[9px] uppercase">Excellent</span>';
+                } else if (asset.status === 'Good') {
+                    statusBadge = '<span class="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 font-bold text-[9px] uppercase">Good</span>';
+                } else if (asset.status === 'Maintenance Required') {
+                    statusBadge = '<span class="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 font-bold text-[9px] uppercase">Maintenance</span>';
+                } else {
+                    statusBadge = '<span class="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 font-bold text-[9px] uppercase">Depleted</span>';
+                }
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap font-bold text-white">${asset.itemName}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-slate-300 font-semibold">${asset.quantity} Qty</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${statusBadge}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right space-x-2">
+                        <button onclick="openAssetModal('edit', ${asset.id}, '${asset.itemName}', ${asset.quantity}, '${asset.status}')" class="text-indigo-400 hover:text-indigo-300 font-bold">Edit</button>
+                        <button onclick="deleteAsset(${asset.id}, '${asset.itemName}')" class="text-rose-400 hover:text-rose-300 font-bold">Delete</button>
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
+        }
+
+        // Add/Edit Modals handling
+        function openAssetModal(mode, id = null, name = '', quantity = 1, status = 'Excellent') {
+            document.getElementById('asset-modal').classList.remove('hidden');
+            document.getElementById('asset-form-id').value = id;
+            document.getElementById('asset-form-name').value = name;
+            document.getElementById('asset-form-quantity').value = quantity;
+            document.getElementById('asset-form-status').value = status;
+            
+            const title = document.getElementById('asset-modal-title');
+            if (mode === 'add') {
+                title.innerText = 'Add Hostel Asset';
+                document.getElementById('asset-form-name').removeAttribute('readonly');
+            } else {
+                title.innerText = 'Edit Asset details';
+            }
+        }
+
+        function closeAssetModal() {
+            document.getElementById('asset-modal').classList.add('hidden');
+            document.getElementById('asset-form').reset();
+        }
+
+        function submitAssetForm(event) {
+            event.preventDefault();
+            const id = document.getElementById('asset-form-id').value;
+            const name = document.getElementById('asset-form-name').value;
+            const qty = document.getElementById('asset-form-quantity').value;
+            const status = document.getElementById('asset-form-status').value;
+
+            const payload = { itemName: name, quantity: qty, status: status };
+            
+            const isEdit = id && id !== 'null' && id !== '';
+            const url = isEdit ? `/api/assets/${id}` : '/api/assets';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    showToast('Action Failed', data.error, 'rose');
+                } else {
+                    showToast(isEdit ? 'Asset Updated' : 'Asset Created', data.message || 'Action executed successfully.', 'emerald');
+                    closeAssetModal();
+                    loadAllData();
+                }
+            });
+        }
+
+        function deleteAsset(id, name) {
+            if (confirm(`Delete asset item "${name}" from hostel inventory?`)) {
+                fetch(`/api/assets/${id}`, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                    showToast('Asset Deleted', data.message, 'rose');
+                    loadAllData();
+                });
+            }
+        }
+
+        // ----------------- INCHARGE: QUICK ONBOARDING FORM -----------------
+
+        function renderAvatarPicker() {
+            const picker = document.getElementById('form-avatar-picker');
+            picker.innerHTML = '';
+            
+            AVATARS.forEach((url, idx) => {
+                const img = document.createElement('img');
+                img.src = url;
+                img.className = `h-12 w-12 rounded-full border-2 cursor-pointer object-cover hover:scale-105 transition ${idx === 0 ? 'border-indigo-500 scale-105' : 'border-slate-800'}`;
+                img.onclick = () => selectFormAvatar(img, url);
+                picker.appendChild(img);
+                
+                if (idx === 0) {
+                    document.getElementById('form-photo-url-input').value = url;
+                }
+            });
+        }
+
+        function selectFormAvatar(selectedImg, url) {
+            const allImgs = document.getElementById('form-avatar-picker').getElementsByTagName('img');
+            for (let i = 0; i < allImgs.length; i++) {
+                allImgs[i].className = 'h-12 w-12 rounded-full border-2 cursor-pointer object-cover hover:scale-105 transition border-slate-800';
+            }
+            selectedImg.className = 'h-12 w-12 rounded-full border-2 cursor-pointer object-cover hover:scale-105 transition border-indigo-500 scale-105';
+            document.getElementById('form-photo-url-input').value = url;
+        }
+
+        function submitOnboardForm(event) {
+            event.preventDefault();
+            const form = document.getElementById('onboard-form');
+            const formData = new FormData(form);
+            
+            const payload = {};
+            formData.forEach((val, key) => {
+                payload[key] = val;
+            });
+
+            fetch('/api/staff', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                if (!res.ok) {
+                    return res.json().then(err => { throw new Error(err.error || 'Server error'); });
+                }
+                return res.json();
+            })
+            .then(data => {
+                showToast('Application Sent', data.message || 'Onboarding request submitted successfully!', 'emerald');
+                form.reset();
+                renderAvatarPicker();
+                loadAllData();
+            })
+            .catch(err => {
+                showToast('Submission Failed', err.message || 'Failed to submit onboarding request.', 'rose');
+                console.error("Onboard form submission error:", err);
+            });
+        }
+
+        // ----------------- INCHARGE: CAMERA & SIMULATOR QR SCANNER -----------------
+
+        function renderSimulatorDropdown() {
+            const dropdown = document.getElementById('simulator-staff-select');
+            dropdown.innerHTML = '';
+            
+            const approvedStaff = staffList.filter(s => s.status === 'Approved');
+            if (approvedStaff.length === 0) {
+                dropdown.innerHTML = '<option value="">No Approved Staff in Database</option>';
+                return;
+            }
+
+            approvedStaff.forEach(staff => {
+                const opt = document.createElement('option');
+                opt.value = staff.employeeId;
+                opt.innerText = `${staff.name} (${staff.employeeId} - ${staff.role})`;
+                dropdown.appendChild(opt);
+            });
+        }
+
+        // Real Camera scanner via HTML5 QRcode
+        function startCameraScanner() {
+            document.getElementById('qr-laser-line').classList.remove('hidden');
+            
+            if (qrScannerInstance) {
+                stopCameraScanner();
+            }
+
+            // Target div id 'qr-reader'
+            qrScannerInstance = new Html5Qrcode("qr-reader");
+            
+            const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+                console.log(`Scan result: ${decodedText}`, decodedResult);
+                processAttendanceScan(decodedText);
+                stopCameraScanner(); // Stop camera to prevent rapid scans
+            };
+
+            const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+
+            qrScannerInstance.start(
+                { facingMode: "environment" }, // Back camera preferred on phones
+                config, 
+                qrCodeSuccessCallback
+            )
+            .catch(err => {
+                console.error("Camera startup error:", err);
+                showToast('Camera Error', 'Could not open camera. Try simulating instead.', 'rose');
+                document.getElementById('qr-laser-line').classList.add('hidden');
+            });
+        }
+
+        function stopCameraScanner() {
+            document.getElementById('qr-laser-line').classList.add('hidden');
+            if (qrScannerInstance) {
+                qrScannerInstance.stop().then(() => {
+                    qrScannerInstance = null;
+                }).catch(err => console.error("Error stopping scanner", err));
+            }
+        }
+
+        // Simulator Attendance scanner action
+        function simulateQRScan() {
+            const select = document.getElementById('simulator-staff-select');
+            const empId = select.value;
+            if (!empId) {
+                showToast('No Selection', 'Please create and approve some staff first.', 'rose');
+                return;
+            }
+            processAttendanceScan(empId);
+        }
+
+        // Logging scanned QR codes in backend db
+        function processAttendanceScan(empId) {
+            const payload = {
+                employeeId: empId,
+                scannedBy: "EMP101" // Logged under Incharge Rajesh Kumar (EMP101)
+            };
+
+            fetch('/api/attendance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                const box = document.getElementById('scan-feedback-box');
+                box.classList.remove('hidden');
+                
+                if (data.error) {
+                    box.className = "p-4 rounded-xl border flex items-start space-x-3 bg-rose-500/5 border-rose-500/15 text-rose-400";
+                    box.innerHTML = `
+                        <div class="h-6 w-6 rounded-full bg-rose-500/10 text-rose-400 flex items-center justify-center shrink-0">✕</div>
+                        <div>
+                            <span class="text-xs font-bold block uppercase tracking-wide">Scan Denied</span>
+                            <p class="text-[11px] text-slate-300 mt-0.5">${data.error}</p>
+                        </div>
+                    `;
+                    showToast('Scan Failed', 'Attendance not registered.', 'rose');
+                } else {
+                    box.className = "p-4 rounded-xl border flex items-start space-x-3 bg-emerald-500/5 border-emerald-500/15 text-emerald-400";
+                    
+                    const isNewLog = !data.alreadyLogged;
+                    const statusText = isNewLog ? 'Log Registered' : 'Already Logged Today';
+                    
+                    box.innerHTML = `
+                        <img src="${data.staff.photoUrl || AVATARS[0]}" class="h-10 w-10 rounded-full border border-emerald-500/30 object-cover shrink-0">
+                        <div>
+                            <span class="text-xs font-bold block uppercase tracking-wide text-white">${statusText}</span>
+                            <h4 class="text-xs font-semibold text-slate-200 mt-0.5">${data.staff.name} (${data.staff.employeeId})</h4>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Role: ${data.staff.role}</p>
+                            <p class="text-[9px] text-slate-500 mt-1">Logged timestamp: ${data.timestamp}</p>
+                        </div>
+                    `;
+
+                    showToast(
+                        isNewLog ? 'Attendance Logged' : 'Duplicate Scan Detect', 
+                        isNewLog ? `${data.staff.name} checked in successfully!` : `${data.staff.name} is already logged.`, 
+                        isNewLog ? 'emerald' : 'amber'
+                    );
+
+                    loadAllData(); // Reload stats and logs lists
+                }
+            });
+        }
+
+        // ----------------- GLOBAL HELPER TOAST FEEDBACK -----------------
+
+        function showToast(title, desc, type = 'emerald') {
+            const toast = document.getElementById('toast');
+            const tIcon = document.getElementById('toast-icon');
+            const tTitle = document.getElementById('toast-title');
+            const tDesc = document.getElementById('toast-desc');
+
+            // Style mappings
+            const classes = {
+                emerald: { iconBg: 'bg-emerald-500/10 text-emerald-400', border: 'border-emerald-500/25', icon: '✓' },
+                amber: { iconBg: 'bg-amber-500/10 text-amber-400', border: 'border-amber-500/25', icon: '⚠' },
+                rose: { iconBg: 'bg-rose-500/10 text-rose-400', border: 'border-rose-500/25', icon: '✕' }
+            };
+
+            const styles = classes[type] || classes.emerald;
+
+            tIcon.className = `flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${styles.iconBg}`;
+            tIcon.innerText = styles.icon;
+            
+            toast.className = `fixed bottom-6 right-6 z-50 transform flex items-center space-x-3 rounded-2xl bg-slate-900 p-4 border shadow-2xl transition-all duration-500 translate-y-0 opacity-100 ${styles.border}`;
+            
+            tTitle.innerText = title;
+            tDesc.innerText = desc;
+
+            // Clear existing timeout
+            if (window.toastTimeout) {
+                clearTimeout(window.toastTimeout);
+            }
+
+            window.toastTimeout = setTimeout(() => {
+                toast.className = "hidden fixed bottom-6 right-6 z-50 transform translate-y-10 opacity-0 transition-all duration-500 flex items-center space-x-3 rounded-2xl bg-slate-900 p-4 border border-slate-800 shadow-2xl";
+            }, 4500);
+        }
+    </script>
+</body>
+</html>
