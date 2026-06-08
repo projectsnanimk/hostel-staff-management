@@ -1,0 +1,48 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./hostel_management.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+/// Staff representing all hostel employees (Admins, Incharges, Janitors, Chefs, etc.)
+model Staff {
+  id             Int          @id @default(autoincrement())
+  employeeId     String       @unique // Unique Employee ID (e.g. EMP001)
+  name           String       // Full name of the staff member
+  phoneNumber    String       // Active contact phone number
+  aadharNumber   String       // 12-digit Indian national identity number
+  paymentNumber  String       // Bank account or PhonePe number
+  baseSalary     Float        // Base salary amount
+  role           String       // Job role (e.g. Admin, Incharge, Chef, Security, Janitor)
+  status         String       // Account status: "Pending" or "Approved"
+  photoUrl       String       // Remote or local path to profile photo
+  qrCodeToken    String       // QR Code token (typically equals or is derived from employeeId)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Relations
+  attendanceLogs Attendance[]
+}
+
+/// Attendance logs tracking scans of staff ID cards by an Incharge
+model Attendance {
+  id            Int      @id @default(autoincrement())
+  employeeId    String   // Employee ID that was scanned
+  date          String   // Date of attendance (YYYY-MM-DD)
+  scanTimestamp DateTime @default(now()) // High-resolution timestamp
+  scannedBy     String   // Employee ID of the Incharge who scanned them
+
+  // Relations
+  staff         Staff    @relation(fields: [employeeId], references: [employeeId], onDelete: Cascade)
+}
+
+/// Hostel Assets tracking inventory items, quantities, and their current conditions
+model Asset {
+  id       Int    @id @default(autoincrement())
+  itemName String @unique // Name of the asset (e.g. Bed Sheet, Geyser, Table)
+  quantity Int    // Quantity available
+  status   String // Status/Condition (e.g. Excellent, Maintenance Required, Depleted)
+}
